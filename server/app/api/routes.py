@@ -1,11 +1,16 @@
-from fastapi import APIRouter, UploadFile, File, Form, Depends
+from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from app.core.database import SessionLocal
 from app.models.schema import FileMetadata
 import uuid
+from fastapi.security import OAuth2PasswordBearer
+from app.api.dependencies import get_current_admin, get_current_user
+from app.models.schema import User
+
 
 router = APIRouter()
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 # Dependency to get DB session
 def get_db():
@@ -18,7 +23,7 @@ def get_db():
 @router.post("/send")
 async def send_file(
     file: UploadFile = File(...),
-    submitter: str = Form(...),
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     content = await file.read()
@@ -28,7 +33,7 @@ async def send_file(
     new_file = FileMetadata(
         id=str(uuid.uuid4()),
         filename=file.filename,
-        submitter=submitter,
+        submitter_id=current_user.id,
         similarity_score=similarity_score,
         status="pending"
     )
@@ -40,15 +45,17 @@ async def send_file(
     return JSONResponse(content={"message": "File received", "score": similarity_score})
 
 @router.get("/review")
-async def get_all_files(db: Session = Depends(get_db)):
+async def get_all_files(current_admin: User = Depends(get_current_admin), db: Session = Depends(get_db)):
     files = db.query(FileMetadata).all()
     return {"files": files}
 
 @router.post("/decision/{file_id}")
-async def decide_on_file(file_id: str, action: str = Form(...), db: Session = Depends(get_db)):
+async def decide_on_file(file_id: str, action: str = Form(...), current_admin: User = Depends(get_current_admin), db: Session = Depends(get_db)):
     file_record = db.query(FileMetadata).filter(FileMetadata.id == file_id).first()
     if file_record:
         file_record.status = "approved" if action.lower() == "approve" else "denied"
         db.commit()
         return {"message": f"{action.upper()} decision recorded for {file_record.filename}"}
     return JSONResponse(status_code=404, content={"error": "File not found"})
+
+
