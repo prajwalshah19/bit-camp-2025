@@ -12,8 +12,8 @@ class SemanticMatcher:
 
         with open(topics_file, 'r') as f:
             self.word_list = f.read()
-        with open(input_file, 'r') as f:
-            self.text_blob = f.read()
+ 
+        self.text_blob = input_file
     
     def score(self):
 
@@ -38,11 +38,7 @@ class SemanticMatcher:
                     self.scored_sentences[word].append((score, sentence))
             # print(word, self.scored_sentences[word])
             self.scored_sentences[word].sort(key=lambda x: x[0], reverse=True)
-        return overall
+        return overall / len(words) 
     
-    # def get_similarities(self):
-
-    
-
-sm = SemanticMatcher("topics.txt", "example.txt")
-sm.score()
+    def get_matches(self):
+        return self.scored_sentences

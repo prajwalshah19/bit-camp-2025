@@ -8,6 +8,7 @@ from fastapi.security import OAuth2PasswordBearer
 from app.api.dependencies import get_current_admin, get_current_user
 from app.models.schema import User
 from app.models.user_schemas import FileSimple
+from app.engine.semantic_matcher import SemanticMatcher
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
@@ -30,9 +31,14 @@ async def send_file(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    topics = "apple, mountain, bicycle, galaxy, pencil, skyscraper, sandwich, violin, mirror, library, rocket, treasure, perfume, balloon, lamp, guitar, forest, astronaut, cinema, notebook, elephant, waterfall, castle, telescope, rainbow, octopus, cactus, submarine, tornado, pancake, carousel, clock, hammock, lantern, window, compass, kite, volcano, camera, skateboard, puzzle, sandwich, skyscraper, galaxy, robot, pillow, chalk, notebook, ocean"
     content = await file.read()
+    print(content)
+    sm = SemanticMatcher(topics, str(content))
     
-    similarity_score = 0.45  # Placeholder -> should use engine from engine/engine.py to find similarity via ML model
+    similarity_score = sm.score()  # Placeholder -> should use engine from engine/engine.py to find similarity via ML model
+
+    print(similarity_score)
 
     new_file = FileMetadata(
         id=str(uuid.uuid4()),
@@ -65,9 +71,6 @@ def read_file(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="File not found"
         )
-    return file
-
-@router.post("/decision/{file_id}")
 async def decide_on_file(file_id: str, action: str = Form(...), current_admin: User = Depends(get_current_admin), db: Session = Depends(get_db)):
     file_record = db.query(FileMetadata).filter(FileMetadata.id == file_id).first()
     if file_record:
