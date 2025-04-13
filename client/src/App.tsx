@@ -6,6 +6,7 @@ import LoginPage from "./pages/AuthPage"
 import "./App.css"
 
 export default function App() {
+  console.log(import.meta.env.VITE_API_URL);
   return (
     <BrowserRouter>
       <Routes>
