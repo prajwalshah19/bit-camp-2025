@@ -15,6 +15,7 @@ origins = [
     "http://127.0.0.1:5173",       # React dev server
     "http://localhost:80",       # React dev server (Docker)
     "http://127.0.0.1:80",       # React dev server (Docker)
+    "http://bit-camp-2025-1.onrender.com"
 
 
     # "https://app.yourdomain.com",
