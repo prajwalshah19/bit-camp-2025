@@ -4,7 +4,7 @@ export interface FileData {
   original_path: string
   upload_time: string
   status: "pending" | "approved" | "denied"
-  score?: number
+  similarity_score?: number
   matches?: string[]
   submitter_id: string
   decision_time?: string | null

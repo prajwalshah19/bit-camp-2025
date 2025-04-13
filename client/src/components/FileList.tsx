@@ -31,7 +31,7 @@ export default function FileList({ files }: FileListProps) {
               <td>
                 <span className={`${styles.status} ${styles[file.status]}`}>{file.status}</span>
               </td>
-              <td>{file.score !== undefined ? file.score.toFixed(2) : "N/A"}</td>
+              <td>{file.similarity_score !== undefined ? file.similarity_score.toFixed(2) : "N/A"}</td>
               <td>
                 <Link to={`/admin/file/${file.id}`} className={styles.viewButton}>
                   View Details

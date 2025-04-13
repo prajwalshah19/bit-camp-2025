@@ -133,6 +133,8 @@
   font-family: inherit;
   font-size: 0.875rem;
   resize: vertical;
+  background-color: white;
+  color: black;
 }
 
 .notesTextarea:disabled {

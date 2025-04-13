@@ -1,82 +1,74 @@
-"use client"
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
 
-import { useState, useEffect } from "react"
-import { useParams, useNavigate, Link } from "react-router-dom"
-import type { FileData } from "../types/file"
-import styles from "./FileDetailPage.module.css"
+import { useState, useEffect } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import {
+  getFileDetail,
+  decideOnFile,
+} from "../services/api";
+import type { FileData } from "../types/file";
+import styles from "./FileDetailPage.module.css";
 
 export default function FileDetailPage() {
-  const params = useParams()
-  const navigate = useNavigate()
-  const fileId = params.id
+  const { id: fileId } = useParams<{ id: string }>();
+  const navigate = useNavigate();
 
-  const [file, setFile] = useState<FileData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState("")
-  const [adminNotes, setAdminNotes] = useState("")
-  const [updating, setUpdating] = useState(false)
+  const [file, setFile] = useState<FileData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [adminNotes, setAdminNotes] = useState("");
+  const [updating, setUpdating] = useState(false);
+  const [status, setStatus] = useState<"approved" | "denied" | "pending">("pending");
 
   useEffect(() => {
+    if (!fileId) {
+      navigate("/admin");
+      return;
+    }
+
     const fetchFileDetails = async () => {
       try {
-        const response = await fetch(`/api/files/${fileId}`)
-        if (!response.ok) {
-          throw new Error("Failed to fetch file details")
+        const resp = await getFileDetail(fileId);
+        setFile(resp.data);
+        setStatus(resp.data.status);
+      } catch (err: any) {
+        if (err.response?.status === 403) {
+          alert("Access denied");
+          navigate("/upload");
+        } else {
+          setError(err.response?.data?.detail || err.message);
         }
-        const data = await response.json()
-        setFile(data.file)
-        setAdminNotes(data.file.admin_notes || "")
-      } catch (error) {
-        setError(error instanceof Error ? error.message : "An unknown error occurred")
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    if (fileId) {
-      fetchFileDetails()
-    }
-  }, [fileId])
+    fetchFileDetails();
+  }, [fileId, navigate]);
 
   const updateFileStatus = async (status: "approved" | "denied") => {
-    if (!file) return
-
-    setUpdating(true)
+    if (!file || !fileId) return;
+    setUpdating(true);
     try {
-      const response = await fetch(`/api/files/${fileId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          status,
-          admin_notes: adminNotes,
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to update file status")
-      }
-
-      const updatedFile = await response.json()
-      setFile(updatedFile.file)
-    } catch (error) {
-      setError(error instanceof Error ? error.message : "An unknown error occurred")
+      const resp = await decideOnFile(fileId, status);
+      setFile(resp.data.data);
+      setStatus(resp.data.data.status);
+    } catch (err: any) {
+      setError(err.response?.data?.detail || err.message);
     } finally {
-      setUpdating(false)
+      setUpdating(false);
     }
-  }
+  };
 
   if (loading) {
-    return <div className={styles.loading}>Loading file details...</div>
+    return <div className={styles.loading}>Loading file details...</div>;
   }
-
   if (error) {
-    return <div className={styles.error}>{error}</div>
+    return <div className={styles.error}>{error}</div>;
   }
-
   if (!file) {
-    return <div className={styles.error}>File not found</div>
+    return <div className={styles.error}>File not found</div>;
   }
 
   return (
@@ -93,28 +85,29 @@ export default function FileDetailPage() {
       <div className={styles.content}>
         <div className={styles.fileInfo}>
           <h2>{file.filename}</h2>
-
           <div className={styles.infoGrid}>
             <div className={styles.infoItem}>
               <h3>Status</h3>
-              <span className={`${styles.status} ${styles[file.status]}`}>{file.status}</span>
+              <span className={`${styles.status} ${styles[file.status]}`}>
+                {status}
+              </span>
             </div>
-
             <div className={styles.infoItem}>
               <h3>Upload Time</h3>
               <p>{new Date(file.upload_time).toLocaleString()}</p>
             </div>
-
             <div className={styles.infoItem}>
               <h3>Score</h3>
-              <p>{file.score !== undefined ? file.score.toFixed(2) : "N/A"}</p>
+              <p>
+                {file.similarity_score !== undefined
+                  ? file.similarity_score.toFixed(2)
+                  : "N/A"}
+              </p>
             </div>
-
             <div className={styles.infoItem}>
-              <h3>Submitter ID</h3>
+              <h3>Submitter</h3>
               <p>{file.submitter_id}</p>
             </div>
-
             {file.decision_time && (
               <div className={styles.infoItem}>
                 <h3>Decision Time</h3>
@@ -123,21 +116,6 @@ export default function FileDetailPage() {
             )}
           </div>
 
-          <div className={styles.section}>
-            <h3>File Path</h3>
-            <p className={styles.path}>{file.original_path}</p>
-          </div>
-
-          {file.matches && file.matches.length > 0 && (
-            <div className={styles.section}>
-              <h3>Top Matches</h3>
-              <ul className={styles.matchesList}>
-                {file.matches.map((match, index) => (
-                  <li key={index}>{match}</li>
-                ))}
-              </ul>
-            </div>
-          )}
 
           <div className={styles.section}>
             <h3>Admin Notes</h3>
@@ -145,7 +123,7 @@ export default function FileDetailPage() {
               className={styles.notesTextarea}
               value={adminNotes}
               onChange={(e) => setAdminNotes(e.target.value)}
-              placeholder="Add notes about this file..."
+              placeholder="Add notes..."
               disabled={file.status !== "pending" || updating}
             />
           </div>
@@ -171,5 +149,5 @@ export default function FileDetailPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
