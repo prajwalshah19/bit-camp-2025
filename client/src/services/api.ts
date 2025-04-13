@@ -2,7 +2,7 @@
 import axios from 'axios';
 import { FileData } from '../types/file';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL;
+const API_BASE_URL = 'https://bit-camp-2025.onrender.com/'
 
 const api = axios.create({
   baseURL: API_BASE_URL,
