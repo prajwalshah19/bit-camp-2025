@@ -10,8 +10,7 @@ class SemanticMatcher:
         self.model = SentenceTransformer('all-MiniLM-L6-v2')
         self.scored_sentences: dict[str, list[tuple]] = {}
 
-        with open(topics_file, 'r') as f:
-            self.word_list = f.read()
+        self.word_list = topics_file
  
         self.text_blob = input_file
     
