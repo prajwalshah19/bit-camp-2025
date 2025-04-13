@@ -1,6 +1,4 @@
-"use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./AuthPage.module.css";
@@ -10,6 +8,7 @@ const AuthPage: React.FC = () => {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);       
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -25,16 +24,13 @@ const AuthPage: React.FC = () => {
         localStorage.setItem("email", response.email);
         localStorage.setItem("access_level", response.access_level);
         navigate("/upload"); 
-        console.log("Login successful", response);
       } else {
-        // Registration mode
-        await registerUser(email, password);
-        // Optionally automatically log in after registration or prompt for login.
-        // Here, we switch to login mode.
+        // Registration mode, now with isAdmin flag
+        await registerUser(email, password, isAdmin);
         setMode("login");
       }
     } catch (err: any) {
-      setError(err?.message || "Authentication failed. Please try again.");
+      setError(err?.response?.data?.detail || err?.message || "Authentication failed.");
     } finally {
       setLoading(false);
     }
@@ -48,6 +44,7 @@ const AuthPage: React.FC = () => {
       <div className={styles.formContainer}>
         {error && <div className={styles.error}>{error}</div>}
         <form onSubmit={handleAuth} className={styles.authForm}>
+          {/* email & password fields */}
           <div className={styles.formGroup}>
             <label htmlFor="email">Email</label>
             <input
@@ -70,6 +67,22 @@ const AuthPage: React.FC = () => {
               required
             />
           </div>
+
+          {/* only show in register mode */}
+          {mode === "register" && (
+            <div className={styles.formGroup}>
+              <label htmlFor="isAdmin">
+                <input
+                  id="isAdmin"
+                  type="checkbox"
+                  checked={isAdmin}
+                  onChange={(e) => setIsAdmin(e.target.checked)}
+                />
+                {" "}Register as admin
+              </label>
+            </div>
+          )}
+
           <button type="submit" className={styles.authButton} disabled={loading}>
             {loading
               ? mode === "login"
@@ -80,12 +93,16 @@ const AuthPage: React.FC = () => {
               : "Register"}
           </button>
         </form>
+
         <div className={styles.toggleMode}>
           {mode === "login" ? (
             <p>
               Don't have an account?{" "}
               <span
-                onClick={() => setMode("register")}
+                onClick={() => {
+                  setMode("register");
+                  setError("");
+                }}
                 className={styles.toggleLink}
               >
                 Register here.
@@ -95,7 +112,10 @@ const AuthPage: React.FC = () => {
             <p>
               Already have an account?{" "}
               <span
-                onClick={() => setMode("login")}
+                onClick={() => {
+                  setMode("login");
+                  setError("");
+                }}
                 className={styles.toggleLink}
               >
                 Login here.

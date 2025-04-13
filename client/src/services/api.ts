@@ -18,10 +18,15 @@ api.interceptors.request.use((config) => {
 }, (error) => Promise.reject(error));
 
 
-export const registerUser = async (email: string, password: string) => {
-  const response = await api.post('/auth/register', { email, password });
-  return response.data;
-};
+export const registerUser = async (
+    email: string,
+    password: string,
+    admin: boolean = false
+  ) => {
+    const url = `/auth/register${admin ? '?admin=true' : ''}`;
+    const response = await api.post(url, { email, password });
+    return response.data;
+  };
 
 export const loginUser = async (email: string, password: string) => {
   const response = await api.post('/auth/login', { email, password });
